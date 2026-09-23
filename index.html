@@ -13,7 +13,7 @@
 <title>Tagesgeld-Aufteilung</title>
 <style>
 :root{--navy:#123b5d;--blue:#2878b5;--sky:#eaf3f9;--green:#2d7d62;--orange:#d9862c;--red:#b33a3a;--ink:#183042;--muted:#6d7d89;--line:#dbe5ec;--card:#fff;--bg:#f3f7fa;--emergency-bg:#edf7f3;--free-bg:#fff5e9}
-*{box-sizing:border-box} body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--ink);padding-bottom:90px}
+*{box-sizing:border-box} html,body{overscroll-behavior-y:none} body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--ink);padding-bottom:90px}
 header{background:linear-gradient(135deg,var(--navy),#1e668d);color:white;padding:calc(18px + env(safe-area-inset-top)) 18px 24px;border-radius:0 0 24px 24px;box-shadow:0 8px 28px #123b5d33}
 header h1{font-size:24px;margin:0 0 6px} header p{margin:0;opacity:.85;font-size:14px}
 main{max-width:760px;margin:-12px auto 0;padding:0 14px}.screen{display:none}.screen.active{display:block}
@@ -105,6 +105,28 @@ function downloadData(){let a=document.createElement('a');a.href=URL.createObjec
 function importData(e){let f=e.target.files[0];if(!f)return;let r=new FileReader();r.onload=()=>{try{let x=JSON.parse(r.result);if(!Array.isArray(x.moves)||!Array.isArray(x.plans))throw 0;data=x;save();alert('Daten wurden importiert.')}catch(err){alert('Die Datei konnte nicht importiert werden.')}};r.readAsText(f)}
 function resetData(){if(confirm('Alle lokalen Änderungen verwerfen und Ausgangsdaten laden?')){data=structuredClone(initial);save()}}
 render();
+
+// Verhindert Pull-to-Refresh, ohne das normale Scrollen innerhalb der App zu blockieren.
+let pullStartY=0;
+document.addEventListener('touchstart',event=>{
+  if(event.touches.length===1) pullStartY=event.touches[0].clientY;
+},{passive:true});
+document.addEventListener('touchmove',event=>{
+  if(event.touches.length!==1)return;
+  const movingDown=event.touches[0].clientY>pullStartY;
+  const sheet=event.target.closest('.sheet');
+  const atTop=sheet?sheet.scrollTop<=0:window.scrollY<=0;
+  if(movingDown&&atTop)event.preventDefault();
+},{passive:false});
+
+// Registriert den App-Cache. Die Kontodaten bleiben weiterhin ausschließlich in localStorage.
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('./service-worker.js').catch(error=>{
+      console.error('Service Worker konnte nicht registriert werden:',error);
+    });
+  });
+}
 </script>
 </body>
 </html>
